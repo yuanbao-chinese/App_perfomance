@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 开发模式宽松CSP：允许localhost/127.0.0.1跨域脚本、ws热更新、unsafe-inline骨架屏脚本；生产打包可收紧 -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self' data: blob: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*;
+      style-src 'self' 'unsafe-inline' data:;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://127.0.0.1:*;
+      img-src 'self' data: blob: http://localhost:* http://127.0.0.1:*;
+      connect-src 'self' data: blob: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*;
+      font-src 'self' data: blob:;
+      worker-src 'self' blob:;
+      media-src 'self' blob: data:;
+    " />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APP性能大师 - 手机APP性能检测与监控平台</title>
+    <style>
+      /* ========== 首屏骨架 Loading（webpack 编译完成前显示，避免纯白屏） ========== */
+      html,body{height:100%;margin:0;padding:0;background:#f5f7fa;
+        font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",Roboto,sans-serif;
+        color:#1f1f1f;-webkit-font-smoothing:antialiased}
+      #root:empty::after{content:"";display:block;position:absolute;inset:0}
+      .boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;animation:fadein .25s ease}
+      .boot-card{width:min(540px,84vw);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(22,119,255,.15);padding:36px 40px 30px;text-align:center}
+      .boot-logo{width:84px;height:84px;border-radius:22px;margin:0 auto 18px;background:linear-gradient(135deg,#1677FF 0%,#722ED1 100%);
+        display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:34px;letter-spacing:2px;
+        box-shadow:0 6px 20px rgba(114,46,209,.35)}
+      .boot-title{font-size:22px;font-weight:700;color:#0f172a;margin:0}
+      .boot-sub{font-size:13px;color:#71717a;margin-top:6px;letter-spacing:1px}
+      .boot-bar{position:relative;width:100%;height:6px;background:#f0f0f0;border-radius:999px;overflow:hidden;margin-top:26px}
+      .boot-bar::before{content:"";position:absolute;inset:0;width:30%;background:linear-gradient(90deg,#1677FF,#13C2C2,#722ED1);
+        border-radius:999px;animation:slide 1.4s cubic-bezier(.5,.1,.3,1) infinite}
+      .boot-tips{margin-top:20px;font-size:12px;color:#94a3b8;line-height:1.9}
+      .boot-tips b{color:#1677FF;font-weight:600}
+      @keyframes slide{0%{transform:translateX(-30%)}100%{transform:translateX(380%)}}
+      @keyframes fadein{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+      /* React接管后自动隐藏骨架 */
+      #root:not(:empty) ~ .boot, #root > * ~ .boot{display:none!important}
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- 首屏启动骨架屏：webpack 编译/React 初始化期间显示，React挂载后自动隐藏 -->
+    <div class="boot" id="boot-loading">
+      <div class="boot-card">
+        <div class="boot-logo">AP</div>
+        <div class="boot-title">APP性能大师</div>
+        <div class="boot-sub">Mobile App Performance Monitor</div>
+        <div class="boot-bar"></div>
+        <div class="boot-tips">
+          🚀 正在初始化前端资源，请稍候…<br/>
+          <b>首次运行</b>需编译 React 代码，约 5~15 秒后自动进入系统<br/>
+          如长时间停留此页面，请检查 <b>webpack-dev-server :3000</b> 是否启动正常
+        </div>
+      </div>
+    </div>
+    <script>
+      // Webpack 5 不再自动注入 Node.js 全局变量，先于任何业务脚本 polyfill global/process/Buffer
+      // ⭐ 生产打包模式（file:// 协议）自动设 NODE_ENV=production，否则 development
+      var IS_PROD = location.protocol === 'file:';
+      window.global = window.global || window;
+      window.process = window.process || {
+        env: { NODE_ENV: IS_PROD ? 'production' : 'development' },
+        platform: 'browser',
+        browser: true,
+        cwd: function () { return ''; },
+        version: ''
+      };
+      window.Buffer = window.Buffer || { isBuffer: function () { return false; } };
+
+      // 确保 React 挂载后立即隐藏骨架（三重保险：CSS 选择器 + JS 轮询 + 超时兜底崩溃面板）
+      (function () {
+        var t = setInterval(function () {
+          var root = document.getElementById('root');
+          var boot = document.getElementById('boot-loading');
+          if (root && root.children.length > 0 && boot) {
+            boot.style.display = 'none';
+            clearInterval(t);
+          }
+        }, 120);
+
+        // ⭐⭐⭐ 修复打包后骨架屏卡死 #3：20 秒超时兜底
+        // 如果 20 秒后 #root 还是空节点 → React 一定是渲染抛错挂掉了
+        // 强制隐藏骨架屏 + 在 #root 内显示红色崩溃引导面板（告诉用户去哪里看日志、怎么开 DevTools），再也不会"永远卡在启动中"
+        setTimeout(function () {
+          clearInterval(t);
+          var root = document.getElementById('root');
+          var boot = document.getElementById('boot-loading');
+          if (!root || !boot) return;
+
+          if (root.children.length === 0) {
+            // 隐藏骨架
+            boot.style.display = 'none';
+            var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            var openDevTools = isMac ? '按 ⌥⌘I (Option + Command + I) 打开 DevTools' : '按 Ctrl + Shift + I 打开 DevTools';
+            var menuTip = isMac ? '顶部菜单栏 → View → Toggle Developer Tools（按一下 ⌥/Option 键可显示菜单栏）' : '';
+
+            root.innerHTML =
+              '<div style="position:fixed;inset:0;background:#fff1f0;z-index:2147483647;padding:40px;overflow:auto;font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;">' +
+                '<h1 style="color:#cf1322;margin:0 0 16px;font-size:24px;">⏱️ 前端挂载超时（React 20 秒内未能渲染成功）</h1>' +
+                '<p style="color:#595959;margin:0 0 20px;line-height:1.7;">本页面骨架屏已超时自动关闭，说明 React 渲染过程中出现了 <b>未捕获的异常</b>。常见根因：①浏览器端 polyfill 缺失（process/buffer/events）② preload.js 未能挂载 window.electronAPI ③第三方库与生产 mode 不兼容。请按下方步骤排查：</p>' +
+                '<div style="background:#fff;border:1px solid #ffa39e;border-radius:8px;padding:20px;">' +
+                  '<p style="margin:0 0 12px;font-weight:700;color:#a8071a;">① 打开控制台查看具体报错</p>' +
+                  '<p style="margin:0 0 6px;padding-left:16px;">👉 <b>' + openDevTools + '</b></p>' +
+                  (menuTip ? '<p style="margin:0 0 16px;padding-left:16px;">👉 ' + menuTip + '</p>' : '') +
+                  '<p style="margin:0 0 12px;font-weight:700;color:#a8071a;">② 查看主进程日志（Main 进程错误在这里）</p>' +
+                  '<p style="margin:0 0 16px;padding-left:16px;"><code>~/Library/Application Support/AppPerformanceMaster/main.log</code>（macOS）<br/><code>%APPDATA%\\AppPerformanceMaster\\main.log</code>（Windows）</p>' +
+                  '<p style="margin:0 0 12px;font-weight:700;color:#a8071a;">③ 查看崩溃临时日志</p>' +
+                  '<p style="margin:0;padding-left:16px;"><code>/tmp/app-master-crash.log</code>（macOS）<br/><code>%TEMP%\\app-master-crash.log</code>（Windows）</p>' +
+                '</div>' +
+                '<p style="margin-top:24px;color:#595959;font-size:13px;line-height:1.7;">💡 操作建议：请先执行一次 <code style="background:#faf5f5;padding:2px 6px;border-radius:4px;">npm run build</code> 确保前端构建无编译错误，再重新打包。拿到崩溃堆栈后可直接发给开发修复。</p>' +
+              '</div>';
+          }
+        }, 20000);
+      })();
+    </script>
+  </body>
+</html>

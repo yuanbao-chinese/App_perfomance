@@ -1,0 +1,135 @@
+{
+  "name": "app-performance-master",
+  "productName": "APP性能大师",
+  "version": "1.0.0",
+  "description": "APP性能大师 - 电脑端手机APP性能检测与监控平台，全维度CPU/电量/内存/GPU实时监控，冷热启动测速，一键导出彩色专业报告",
+  "main": "dist/main/main.js",
+  "author": "APP性能大师团队",
+  "build": {
+    "appId": "com.appmaster.performance.monitor",
+    "productName": "APP性能大师",
+    "directories": {
+      "buildResources": "resources/build",
+      "output": "release"
+    },
+    "compression": "maximum",
+    "asar": true,
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "forceCodeSigning": false,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "APP-Performance-Master-Mac-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "APP Performance Master ${version}",
+      "writeUpdateInfo": false,
+      "artifactName": "APP-Performance-Master-Mac-${version}-${arch}.dmg"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "APP-Performance-Master-Windows-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "APP性能大师"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    },
+    "files": [
+      "dist/**/*",
+      "resources/**/*",
+      "package.json"
+    ]
+  },
+  "scripts": {
+    "build": "npm run build:renderer && npm run build:main",
+    "build:renderer": "cross-env NODE_ENV=production webpack --config webpack.renderer.config.js --mode production",
+    "build:main": "cross-env NODE_ENV=production webpack --config webpack.main.config.js --mode production",
+    "dev": "concurrently -k -n renderer,main,electron -c blue,green,yellow \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:electron\"",
+    "dev:renderer": "cross-env NODE_ENV=development webpack serve --config webpack.renderer.config.js --mode development",
+    "dev:main": "cross-env NODE_ENV=development webpack --config webpack.main.config.js --mode development --watch",
+    "dev:electron": "sleep 4 && cross-env NODE_ENV=development electron . --no-sandbox --disable-gpu-sandbox",
+    "start": "cross-env NODE_ENV=production electron . --no-sandbox --disable-gpu-sandbox",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "killport": "node -e \"const e=require('child_process');const p=process.argv[1]||3000;e.execSync(`lsof -ti tcp:${p} 2>/dev/null|xargs -r kill -9;lsof -ti tcp:3001 2>/dev/null|xargs -r kill -9;lsof -ti tcp:3002 2>/dev/null|xargs -r kill -9;lsof -ti tcp:3003 2>/dev/null|xargs -r kill -9;echo 🧹 已清理端口 3000-3003`)\"",
+    "preDist": "npm run build",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:mac:zip": "electron-builder --mac zip",
+    "dist:mac:dmg": "electron-builder --mac dmg",
+    "dist:win": "electron-builder --win --x64",
+    "dist:all": "electron-builder -mw --x64"
+  },
+  "keywords": [
+    "electron",
+    "app-monitor",
+    "performance-testing",
+    "adb",
+    "app性能大师",
+    "性能监控",
+    "冷启动测试"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "antd": "^5.12.0",
+    "axios": "^1.6.2",
+    "buffer": "^6.0.3",
+    "dayjs": "^1.11.10",
+    "echarts": "^5.4.3",
+    "echarts-for-react": "^3.0.2",
+    "events": "^3.3.0",
+    "exceljs": "^4.4.0",
+    "jspdf": "^2.5.1",
+    "pptxgenjs": "^3.12.0",
+    "process": "^0.11.10",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "recharts": "^2.10.3",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.38",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "css-loader": "^6.8.1",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.54.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "html-webpack-plugin": "^5.5.3",
+    "less": "^4.2.0",
+    "less-loader": "^11.1.3",
+    "mini-css-extract-plugin": "^2.7.6",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.2",
+    "wait-on": "^7.2.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}

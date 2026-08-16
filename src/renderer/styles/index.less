@@ -1,0 +1,508 @@
+/* ========== 全局重置样式 ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  color: #1f1f1f;
+  background-color: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== 布局容器 ========== */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: stretch;  /* 保险：让两个子列（.device-panel + .content-area）高度都等于 app-main 的高度，不受子内容高度影响 */
+  min-height: 0;
+  overflow: hidden;      /* ⭐⭐⭐ 关键：强制 app-main 高度等于 flex 计算值，不会被长内容撑爆，否则会把底部 metrics-bar 挤出视口 */
+}
+
+/* 左侧设备栏 */
+.device-panel {
+  width: 260px;
+  min-width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;  /* ⭐⭐⭐ 防止默认 min-height:auto 被内部 device-list 撑爆，导致 app-main 高度超出；
+                     注意不要写 height:0！因为 .device-panel 没有 flex:1，
+                     靠 align-items: stretch 获得高度，height:0 会直接让左侧面板高度=0 消失！ */
+}
+
+.device-panel-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
+  color: #fff;
+}
+
+.device-panel-header h2 {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.device-panel-header p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+/* 全局：所有可滚动区域默认显示滚动条（Mac/WebKit 原本不滚动时隐藏 thumb，用户误以为没滚动条） */
+html,
+body,
+#root {
+  scrollbar-gutter: stable;
+}
+
+.device-list {
+  flex: 1;
+  overflow-y: scroll;       /* ⭐ 改为 scroll：就算设备少内容不溢出也显示滚动条槽位，用户一眼知道这里可滚 */
+  padding: 12px;
+  scrollbar-gutter: stable both-edges;
+  /* ⭐ 强制内容多 1px 高度，保证 overflow-y:scroll 时 thumb 一定出现（不依赖滚动触发显示） */
+  padding-bottom: 13px;
+}
+
+.device-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.device-item:hover {
+  border-color: #1677ff;
+  background: #f0f7ff;
+}
+
+.device-item.selected {
+  border-color: #1677ff;
+  background: #e6f4ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+}
+
+.device-item .device-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.device-item .device-info {
+  font-size: 11px;
+  color: #8c8c8c;
+  line-height: 1.6;
+}
+
+.device-status {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52c41a;
+  box-shadow: 0 0 6px rgba(82, 196, 26, 0.5);
+}
+
+.device-status.disconnected {
+  background: #bfbfbf;
+  box-shadow: none;
+}
+
+/* 中间主内容区 */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0; /* ⭐⭐⭐ 最关键：flex-row 子项默认 min-height:auto，内容过高会撑爆父容器导致子内容 overflow-y 不生效；
+                     因 .content-area 有 flex:1（flex-basis:0%），不再需要额外 height:0，
+                     而 .device-panel 无 flex:1 所以绝对不能写 height:0（会消失），统一用 min-height:0 即可 */
+  background: #f5f7fa;
+  overflow: hidden;
+}
+
+.content-header {
+  height: 56px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.content-body {
+  flex: 1 1 auto;          /* ⭐ 改为标准 flex 写法：grow=1 shrink=1 basis=auto，配合外层 height:0 正确填充 */
+  min-height: 0;
+  padding: 16px 16px 32px; /* 底部 32px 足够的留白，最后一张图/按钮不会贴死底部 metrics-bar（再也不被挡） */
+  overflow-x: hidden;
+  overflow-y: scroll;      /* ⭐ 强制显示滚动条（槽位+thumb都有） */
+  width: 100%;
+  scrollbar-gutter: stable;
+
+  /* ⭐⭐⭐ 兜底写死最大高度：就算 flex 高度计算再怎么 bug，滚动视口也不会超过视口减去头部/底部栏，
+     滚动条一定能滚到所有内容完整可见（不再是摆设） */
+  /* 外层顶部 header 48px + 内部 content-header 56px = 104px，
+     dashboard 额外减底部 metrics-bar 80px（在下面 .has-metrics 里单独覆写） */
+  max-height: calc(100vh - 48px - 56px);
+}
+
+/* ⭐ dashboard 有底部 80px 的指标栏，滚动区再多减 80px，最后 80px 内容不会被挡在指标栏下面 */
+.app-container.has-metrics .content-body {
+  max-height: calc(100vh - 48px - 56px - 80px);
+}
+
+/* ========== 页面级 Tab 区域的安全高度（StartTestPage 内部 Tabs）防止 TabBar 占高度后子内容溢出 ========== */
+.ant-tabs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+.ant-tabs-content-holder {
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+}
+.ant-tabs-content,
+.ant-tabs-tabpane {
+  min-height: 0;
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #8c8c8c;
+  min-height: 0;
+}
+
+.empty-state .empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  color: #595959;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 13px;
+}
+
+/* ========== 底部指标栏 ========== */
+.metrics-bar {
+  height: 80px;
+  min-height: 80px;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.metrics-bar.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.metric-card {
+  flex: 1;
+  min-width: 0;
+  height: 56px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.metric-card:hover {
+  border-color: #1677ff;
+  background: #f0f7ff;
+}
+
+.metric-card.active {
+  border-color: #1677ff;
+  background: linear-gradient(135deg, #e6f4ff 0%, #ffffff 100%);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.12);
+}
+
+.metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.metric-icon.cpu { background: linear-gradient(135deg, #fa8c16, #d46b08); color: #fff; }
+.metric-icon.battery { background: linear-gradient(135deg, #52c41a, #389e0d); color: #fff; }
+.metric-icon.memory { background: linear-gradient(135deg, #13c2c2, #08979c); color: #fff; }
+.metric-icon.gpu { background: linear-gradient(135deg, #eb2f96, #c41d7f); color: #fff; }
+.metric-icon.start { background: linear-gradient(135deg, #722ed1, #531dab); color: #fff; }
+
+.metric-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.metric-title {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f1f1f;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.metric-value.warn { color: #faad14; }
+.metric-value.error { color: #ff4d4f; }
+
+/* ========== 数据卡片 ========== */
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stat-card-title h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin: 0;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: #8c8c8c;
+  margin-left: 4px;
+}
+
+.stat-summary {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.stat-summary-item {
+  font-size: 12px;
+  color: #595959;
+}
+
+.stat-summary-item .label {
+  color: #8c8c8c;
+  margin-right: 4px;
+}
+
+/* ========== 图表容器 ========== */
+.chart-container {
+  width: 100%;
+  height: 260px;
+  min-height: 260px;  /* 绝对不缩成 0（flex 子项可能被压缩时保护） */
+  flex-shrink: 0;     /* 关键：在任何 flex 容器下图表都不允许被压缩高度 */
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.chart-container.fullscreen {
+  position: fixed;
+  top: 56px;
+  left: 260px;
+  right: 0;
+  bottom: 80px;
+  z-index: 1000;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  padding: 20px;
+  background: #fff;
+}
+
+/* ========== 告警标记 ========== */
+.alert-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.alert-badge.critical {
+  background: #fff1f0;
+  color: #cf1322;
+  border: 1px solid #ffa39e;
+}
+
+.alert-badge.warning {
+  background: #fffbe6;
+  color: #d46b08;
+  border: 1px solid #ffd591;
+}
+
+.alert-badge.normal {
+  background: #f6ffed;
+  color: #389e0d;
+  border: 1px solid #b7eb8f;
+}
+
+/* ========== APP选择器 ========== */
+.app-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+/* ========== 工具栏 ========== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 滚动条美化 + Mac 下始终可见（默认 overlay 不滚时隐藏，用户以为"没有滚动条"）
+   ⭐ 宽度从 10px 加到 12px，thumb/track 颜色更深 + 失焦不变淡 → Mac 用户启动应用就看到滚动条，不用等滚一下 */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  -webkit-appearance: none !important;
+  visibility: visible !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #e8e8e8;           /* 槽位：比之前更深一点（原 #f0f0f0 → #e8e8e8），视觉更明显 */
+  border-radius: 6px;
+  -webkit-appearance: none !important;
+  visibility: visible !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a6a6a6;           /* 滑块：默认比之前深（原 #bfbfbf → #a6a6a6），不滚也能一眼看到 */
+  border: 2px solid transparent; /* 用透明 border 做视觉内边距，看起来更细更好点 */
+  background-clip: content-box;  /* 只在内部填充颜色，不会盖掉透明 border */
+  border-radius: 6px;
+  min-height: 40px;              /* 滑块太短不好拖，最短 40px */
+  -webkit-appearance: none !important;
+  visibility: visible !important;
+}
+
+/* ⭐ Mac 系统默认窗口失焦时 thumb 会变淡 → 强制失焦颜色与正常一致，滚动条不会"消失" */
+::-webkit-scrollbar-thumb:window-inactive {
+  background: #a6a6a6;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  visibility: visible !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #737373;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #434343;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* ========== 响应式调整 ========== */
+@media (max-width: 1200px) {
+  .device-panel {
+    width: 220px;
+    min-width: 220px;
+  }
+  .metric-card {
+    padding: 6px 10px;
+  }
+  .metric-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .metric-value {
+    font-size: 16px;
+  }
+}
